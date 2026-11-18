@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MASTERED_INTERVAL, applyAnswer, dayNumber, introduce, isDue, kindForBox, newCard } from './srs';
+import { MASTERED_INTERVAL, applyAnswer, dayNumber, introduce, isDue, newCard } from './srs';
 
 const TODAY = 20_000;
 
@@ -33,12 +33,6 @@ describe('cajas de Leitner', () => {
     expect(card.due).toBe(TODAY);
     expect(card.wrong).toBe(1);
     expect(card.correct).toBe(2);
-  });
-
-  it('primero se reconoce (elección) y después se escribe', () => {
-    expect(kindForBox(1)).toBe('choice');
-    expect(kindForBox(2)).toBe('write');
-    expect(kindForBox(5)).toBe('write');
   });
 
   it('dayNumber cambia a medianoche local', () => {

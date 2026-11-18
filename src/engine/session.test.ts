@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { seededRng } from '../lib/random';
+import { profileForAge } from './profile';
 import { SESSION_LIMITS, planSession, scheduleRetry, type Cards } from './session';
 import type { CardState } from './srs';
 
@@ -8,7 +9,7 @@ const card = (box: number, due: number): CardState => ({ box, due, seen: 1, corr
 
 describe('planSession', () => {
   it('sin progreso presenta 4 verbos de la semana 1, de dos en dos', () => {
-    const plan = planSession({}, 1, TODAY, seededRng(1));
+    const plan = planSession({}, 1, TODAY, profileForAge(12), seededRng(1));
     expect(plan.reviewCount).toBe(0);
     expect(plan.newCount).toBe(4);
     expect(plan.steps.map((s) => `${s.kind}:${s.verbId}`)).toEqual([
@@ -25,7 +26,7 @@ describe('planSession', () => {
 
   it('pone primero los repasos pendientes y los pregunta según su caja', () => {
     const cards: Cards = { 1: card(1, TODAY), 2: card(3, TODAY - 2), 3: card(2, TODAY + 1) };
-    const plan = planSession(cards, 1, TODAY, seededRng(1));
+    const plan = planSession(cards, 1, TODAY, profileForAge(12), seededRng(1));
     expect(plan.reviewCount).toBe(2);
     const reviews = plan.steps.slice(0, 2);
     expect(reviews).toEqual(
@@ -40,23 +41,41 @@ describe('planSession', () => {
   });
 
   it('presenta antes los verbos de la semana actual que los de semanas anteriores', () => {
-    const plan = planSession({}, 3, TODAY, seededRng(1));
+    const plan = planSession({}, 3, TODAY, profileForAge(12), seededRng(1));
     expect(plan.steps.filter((s) => s.kind === 'present').map((s) => s.verbId)).toEqual([15, 16, 17, 18]);
   });
 
   it('no mete verbos de semanas futuras', () => {
     const cards: Cards = {};
     for (let id = 1; id <= 7; id++) cards[id] = card(2, TODAY + 1);
-    const plan = planSession(cards, 1, TODAY, seededRng(1));
+    const plan = planSession(cards, 1, TODAY, profileForAge(12), seededRng(1));
     expect(plan.steps).toHaveLength(0);
   });
 
   it('si hay muchos repasos atrasados no añade verbos nuevos', () => {
     const cards: Cards = {};
     for (let id = 1; id <= 30; id++) cards[id] = card(2, TODAY - 1);
-    const plan = planSession(cards, 6, TODAY, seededRng(1));
+    const plan = planSession(cards, 6, TODAY, profileForAge(12), seededRng(1));
     expect(plan.reviewCount).toBe(SESSION_LIMITS.maxReviews);
     expect(plan.newCount).toBe(0);
+  });
+});
+
+describe('planSession según la edad', () => {
+  it('con 9 años presenta 3 verbos nuevos y pregunta eligiendo', () => {
+    const plan = planSession({}, 1, TODAY, profileForAge(9), seededRng(1));
+    expect(plan.newCount).toBe(3);
+    expect(plan.steps.filter((s) => s.kind !== 'present').every((s) => s.kind === 'choice')).toBe(true);
+  });
+
+  it('con 15 años escribe desde el principio', () => {
+    const plan = planSession({}, 1, TODAY, profileForAge(15), seededRng(1));
+    expect(plan.steps.filter((s) => s.kind !== 'present').every((s) => s.kind === 'write')).toBe(true);
+  });
+
+  it('con 9 años un verbo en la caja 2 se sigue preguntando eligiendo', () => {
+    const plan = planSession({ 1: card(2, TODAY) }, 1, TODAY, profileForAge(9), seededRng(1));
+    expect(plan.steps[0]).toEqual({ verbId: 1, kind: 'choice' });
   });
 });
 

@@ -3,7 +3,7 @@ import { Home } from './screens/Home';
 import { Session } from './screens/Session';
 import { Settings } from './screens/Settings';
 import { Welcome } from './screens/Welcome';
-import { emptyProgress, loadProgress, saveProgress, type Progress } from './storage/progress';
+import { emptyProgress, loadProgress, needsProfile, saveProgress, type Progress } from './storage/progress';
 
 type Screen = 'home' | 'session' | 'settings';
 
@@ -40,12 +40,15 @@ export default function App() {
   const update = useCallback((change: (p: Progress) => Progress) => setProgress(change), []);
 
   let content;
-  if (!progress.settings.onboarded) {
+  if (!progress.settings.onboarded || needsProfile(progress.settings)) {
     content = (
       <Welcome
-        onStart={(week) =>
-          setProgress((p) => ({ ...p, settings: { ...p.settings, currentWeek: week, onboarded: true } }))
-        }
+        settings={progress.settings}
+        profileOnly={progress.settings.onboarded}
+        onDone={(changes) => {
+          setProgress((p) => ({ ...p, settings: { ...p.settings, ...changes } }));
+          window.scrollTo(0, 0);
+        }}
       />
     );
   } else if (screen === 'session') {
@@ -56,7 +59,7 @@ export default function App() {
         settings={progress.settings}
         onChange={(settings) => setProgress((p) => ({ ...p, settings }))}
         onReset={() => {
-          setProgress({ ...emptyProgress(), settings: { ...progress.settings } });
+          setProgress((p) => ({ ...emptyProgress(), settings: { ...p.settings } }));
           open('home');
         }}
         onBack={() => open('home')}

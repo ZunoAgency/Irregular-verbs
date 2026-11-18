@@ -1,31 +1,52 @@
-const PATHS = {
-  speaker:
-    'M11 5 6 9H3v6h3l5 4V5Zm4.5 3.5a5 5 0 0 1 0 7M18.4 5.6a9 9 0 0 1 0 12.8',
+const STROKE = {
+  speaker: 'M11 5 6 9H3v6h3l5 4V5Zm4.5 3.5a5 5 0 0 1 0 7M18.4 5.6a9 9 0 0 1 0 12.8',
   close: 'M6 6l12 12M18 6 6 18',
   settings:
     'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2-1.2L14.5 3h-5l-.4 2.6a7.6 7.6 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2 1.2l.4 2.6h5l.4-2.6a7.6 7.6 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z',
-  check: 'M5 12.5 10 17 19 7',
-  cross: 'M7 7l10 10M17 7 7 17',
+  check: 'M5 12.5 9.5 17 19 7',
   back: 'M15 5 8 12l7 7',
+  arrowRight: 'M5 12h14M13 6l6 6-6 6',
   arrowDown: 'M12 5v14m-6-6 6 6 6-6',
+  trophy: 'M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6',
 } as const;
 
-export type IconName = keyof typeof PATHS;
+const FILLED = {
+  star: 'M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z',
+  flame: 'M12 2c1 3.5 5.5 5.6 5.5 10.5a5.5 5.5 0 0 1-11 0c0-2.2 1-3.8 2.2-4.9 0 1.6.6 2.7 1.6 3.3C10.3 7.6 10.9 4.6 12 2Z',
+  sparkle: 'M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z',
+} as const;
 
-export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {
+export type IconName = keyof typeof STROKE | keyof typeof FILLED;
+
+interface Props {
+  name: IconName;
+  size?: number;
+  /** Color de relleno de los iconos macizos (estrella, llama, destello). */
+  color?: string;
+  strokeWidth?: number;
+}
+
+export function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2.6 }: Props) {
+  if (name in FILLED) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+        <path d={FILLED[name as keyof typeof FILLED]} fill={color} />
+      </svg>
+    );
+  }
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
+      stroke={color}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d={PATHS[name]} />
+      <path d={STROKE[name as keyof typeof STROKE]} />
     </svg>
   );
 }

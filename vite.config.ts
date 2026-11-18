@@ -13,6 +13,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      workbox: {
+        // Solo las letras latinas de las fuentes: el resto de alfabetos no se usa.
+        globPatterns: ['**/*.{js,css,html}', '**/*-latin-wght-normal-*.woff2'],
+      },
       manifest: {
         name: 'Verbos irregulares',
         short_name: 'Verbos',
@@ -22,8 +26,8 @@ export default defineConfig({
         scope: BASE,
         display: 'standalone',
         orientation: 'any',
-        background_color: '#f6f4ef',
-        theme_color: '#3b4cca',
+        background_color: '#f4f1ff',
+        theme_color: '#6c4cf5',
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },

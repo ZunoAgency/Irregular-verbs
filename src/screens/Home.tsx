@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
-import { VERBS } from '../data/verbs';
+import { VERBS, WEEKS } from '../data/verbs';
+import { profileForAge } from '../engine/profile';
 import { planSession } from '../engine/session';
 import { dayNumber } from '../engine/srs';
+import { currentStreak, weekProgress } from '../engine/stats';
 import type { Progress } from '../storage/progress';
+import { BacoSays } from '../components/Baco';
 import { Icon } from '../components/Icon';
-import { WeekGrid } from '../components/WeekGrid';
-import { STATUS_LABEL, statusOf, type Status } from '../components/status';
+import { WeekPath } from '../components/WeekPath';
 
 interface Props {
   progress: Progress;
@@ -13,78 +15,102 @@ interface Props {
   onSettings: () => void;
 }
 
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
 export function Home({ progress, onStart, onSettings }: Props) {
   const { cards, settings } = progress;
-  const plan = useMemo(() => planSession(cards, settings.currentWeek, dayNumber()), [cards, settings.currentWeek]);
-  const totals = useMemo(() => {
-    const counts: Record<Status, number> = { unseen: 0, learning: 0, reviewing: 0, mastered: 0 };
-    for (const verb of VERBS) counts[statusOf(cards[verb.id])]++;
-    return counts;
-  }, [cards]);
+  const today = dayNumber();
+  const plan = useMemo(
+    () => planSession(cards, settings.currentWeek, today, profileForAge(settings.age)),
+    [cards, settings.currentWeek, settings.age, today],
+  );
+  const streak = currentStreak(progress.studyDays, today);
+  const weeksDone = WEEKS.filter((week) => weekProgress(cards, week).stars > 0).length;
 
-  const questions = plan.reviewCount + plan.newCount;
-  const minutes = Math.max(1, Math.round(((plan.reviewCount + plan.newCount * 2) * 15) / 60));
-  const allSeenUpToWeek = VERBS.every((verb) => verb.week > settings.currentWeek || statusOf(cards[verb.id]) !== 'unseen');
+  const { reviewCount: reviews, newCount: fresh } = plan;
+  const hasWork = reviews + fresh > 0;
+  const minutes = Math.max(1, Math.round(((reviews + fresh * 2) * 15) / 60));
+  const allSeenUpToWeek = VERBS.every((verb) => verb.week > settings.currentWeek || (cards[verb.id]?.box ?? 0) > 0);
+
+  let message: string;
+  if (reviews > 0 && fresh > 0) {
+    message = `Hoy toca repasar ${plural(reviews, 'verbo', 'verbos')} y conocer ${plural(fresh, 'nuevo', 'nuevos')}. ¿Empezamos?`;
+  } else if (reviews > 0) {
+    message = `Hoy toca repasar ${plural(reviews, 'verbo', 'verbos')}. ¿Empezamos?`;
+  } else if (fresh > 0) {
+    message = `Hoy vas a conocer ${plural(fresh, 'verbo nuevo', 'verbos nuevos')}. ¿Empezamos?`;
+  } else if (allSeenUpToWeek && settings.currentWeek < WEEKS.length) {
+    message = `Ya has visto todos los verbos hasta la semana ${settings.currentWeek}. Si en clase vais por la siguiente, cámbiala en ajustes.`;
+  } else {
+    message = '¡Todo al día! Vuelve mañana y repasamos juntos.';
+  }
 
   return (
     <main className="screen home">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Verbos irregulares</p>
-          <h1 className="title">Hola 👋</h1>
-        </div>
+      <header className="home-head">
+        <span className="avatar" aria-hidden="true">
+          {settings.name.charAt(0).toUpperCase()}
+        </span>
+        <h1 className="title">¡Hola, {settings.name}!</h1>
         <button type="button" className="icon-btn" onClick={onSettings} aria-label="Ajustes">
-          <Icon name="settings" />
+          <Icon name="settings" strokeWidth={2.2} />
         </button>
       </header>
 
-      <section className="card today" aria-labelledby="today-title">
-        <div className="today-head">
-          <h2 id="today-title">Sesión de hoy</h2>
+      <div className="pills">
+        <span className="pill pill-flame">
+          <Icon name="flame" size={20} color="var(--flame)" />
+          {streak > 0 ? plural(streak, 'día seguido', 'días seguidos') : 'Empieza tu racha'}
+        </span>
+        <span className="pill pill-star">
+          <Icon name="star" size={20} color="var(--star)" />
+          {plural(progress.stars, 'estrella', 'estrellas')}
+        </span>
+      </div>
+
+      <BacoSays mood={hasWork ? 'normal' : 'happy'}>{message}</BacoSays>
+
+      <section className="card mission" aria-labelledby="mission-title">
+        <div className="mission-head">
+          <h2 id="mission-title" className="section-title">
+            {hasWork ? 'Misión de hoy' : '¡Misión cumplida!'}
+          </h2>
           <button type="button" className="chip" onClick={onSettings}>
             Semana {settings.currentWeek}
           </button>
         </div>
-        {questions > 0 ? (
+        {hasWork ? (
           <>
-            <p className="today-counts">
-              <span>
-                <strong>{plan.reviewCount}</strong> {plan.reviewCount === 1 ? 'repaso' : 'repasos'}
+            <div className="mission-tiles">
+              <span className="mission-tile tint-5">
+                <strong>{reviews}</strong> {reviews === 1 ? 'repaso' : 'repasos'}
               </span>
-              <span>
-                <strong>{plan.newCount}</strong> {plan.newCount === 1 ? 'verbo nuevo' : 'verbos nuevos'}
+              <span className="mission-tile tint-3">
+                <strong>{fresh}</strong> {fresh === 1 ? 'nuevo' : 'nuevos'}
               </span>
-              <span className="muted">≈ {minutes} min</span>
-            </p>
+              <span className="mission-tile tint-4">
+                <strong>{minutes}</strong> {minutes === 1 ? 'minuto' : 'minutos'}
+              </span>
+            </div>
             <button type="button" className="btn btn-primary btn-block btn-big" onClick={onStart}>
-              Empezar
+              ¡Empezar! <Icon name="arrowRight" size={22} strokeWidth={3} />
             </button>
           </>
         ) : (
-          <div className="all-done">
-            <p className="all-done-title">¡Todo al día! 🎉</p>
-            <p className="muted">
-              {allSeenUpToWeek && settings.currentWeek < 11
-                ? 'Ya has visto todos los verbos hasta esta semana. Vuelve mañana para repasar o, si en clase ya habéis pasado a la siguiente, cambia la semana.'
-                : 'Vuelve mañana para repasar. Repasar justo cuando empiezas a olvidar es lo que fija los verbos.'}
-            </p>
-          </div>
+          <p className="muted">Repasar justo cuando empiezas a olvidar es lo que hace que los verbos se queden.</p>
         )}
       </section>
 
-      <section className="card" aria-labelledby="progress-title">
-        <h2 id="progress-title" className="section-title">
-          Tu progreso
-        </h2>
-        <p className="totals">
-          {(Object.keys(STATUS_LABEL) as Status[]).map((status) => (
-            <span key={status} className="total">
-              <span className={`cell cell-${status}`} />
-              <strong>{totals[status]}</strong> {STATUS_LABEL[status].toLowerCase()}
-            </span>
-          ))}
-        </p>
-        <WeekGrid cards={cards} currentWeek={settings.currentWeek} />
+      <section aria-labelledby="path-title">
+        <div className="path-head">
+          <h2 id="path-title" className="section-title">
+            Tu camino
+          </h2>
+          <span className="muted small">
+            {weeksDone} de {WEEKS.length} semanas
+          </span>
+        </div>
+        <WeekPath cards={cards} currentWeek={settings.currentWeek} />
       </section>
     </main>
   );

@@ -1,7 +1,8 @@
-import { WeekPicker } from '../components/WeekPicker';
+import { useState } from 'react';
 import { Icon } from '../components/Icon';
+import { AgePicker, WeekPicker } from '../components/Pickers';
 import { canSpeak, speak } from '../lib/speech';
-import type { Settings as SettingsData } from '../storage/progress';
+import { cleanName, type Settings as SettingsData } from '../storage/progress';
 
 interface Props {
   settings: SettingsData;
@@ -11,6 +12,14 @@ interface Props {
 }
 
 export function Settings({ settings, onChange, onReset, onBack }: Props) {
+  const [name, setName] = useState(settings.name);
+
+  function saveName() {
+    const clean = cleanName(name);
+    if (clean) onChange({ ...settings, name: clean });
+    setName(clean || settings.name);
+  }
+
   return (
     <main className="screen settings">
       <header className="topbar">
@@ -22,8 +31,35 @@ export function Settings({ settings, onChange, onReset, onBack }: Props) {
       </header>
 
       <section className="card">
+        <h2 className="section-title">Sobre ti</h2>
+        <div className="field">
+          <label className="field-label" htmlFor="settings-name">
+            Tu nombre
+          </label>
+          <input
+            id="settings-name"
+            className="text-input"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onBlur={saveName}
+            onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+            autoComplete="given-name"
+            autoCapitalize="words"
+            maxLength={24}
+          />
+        </div>
+        <div className="field">
+          <span className="field-label" id="settings-age">
+            Tu edad
+          </span>
+          <AgePicker value={settings.age} onChange={(age) => onChange({ ...settings, age })} labelledBy="settings-age" />
+          <p className="muted small">Con la edad, Baco decide cuánta ayuda darte y cuántos verbos nuevos ver cada día.</p>
+        </div>
+      </section>
+
+      <section className="card">
         <h2 className="section-title">Semana actual</h2>
-        <p className="muted">Los verbos nuevos salen hasta esta semana; los de antes siguen entrando en los repasos.</p>
+        <p className="muted small">Los verbos nuevos salen hasta esta semana; los de antes siguen entrando en los repasos.</p>
         <WeekPicker value={settings.currentWeek} onChange={(week) => onChange({ ...settings, currentWeek: week })} />
       </section>
 
@@ -32,7 +68,7 @@ export function Settings({ settings, onChange, onReset, onBack }: Props) {
           <label className="toggle">
             <span>
               <strong>Leer en voz alta</strong>
-              <span className="muted">Pronuncia cada verbo al verlo y al corregir.</span>
+              <span className="muted small">Pronuncia cada verbo al verlo y al corregir.</span>
             </span>
             <input
               type="checkbox"
@@ -48,12 +84,13 @@ export function Settings({ settings, onChange, onReset, onBack }: Props) {
 
       <section className="card">
         <h2 className="section-title">Progreso</h2>
-        <p className="muted">El progreso se guarda en este dispositivo y en este navegador.</p>
+        <p className="muted small">El progreso se guarda en este dispositivo y en este navegador.</p>
         <button
           type="button"
           className="btn btn-danger"
           onClick={() => {
-            if (window.confirm('¿Seguro que quieres borrar todo el progreso? No se puede deshacer.')) onReset();
+            if (window.confirm('¿Seguro que quieres borrar todo el progreso? Se pierden los verbos, las estrellas y la racha.'))
+              onReset();
           }}
         >
           Borrar todo el progreso

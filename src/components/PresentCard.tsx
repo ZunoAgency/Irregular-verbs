@@ -12,9 +12,7 @@ interface Props {
 
 export function PresentCard({ verb, autoSpeak, onDone }: Props) {
   const family = FAMILIES[verb.family];
-  const relatives = VERBS.filter((other) => other.family === verb.family && other.id !== verb.id)
-    .slice(0, 4)
-    .map((other) => `${other.base} → ${other.past[0]}`);
+  const relatives = VERBS.filter((other) => other.family === verb.family && other.id !== verb.id).slice(0, 3);
   const [before, past, after] = splitExample(verb);
 
   useEffect(() => {
@@ -22,58 +20,72 @@ export function PresentCard({ verb, autoSpeak, onDone }: Props) {
   }, [verb, autoSpeak]);
 
   return (
-    <section className="card present" aria-labelledby="present-title">
-      <p className="eyebrow">
-        Verbo nuevo · Semana {verb.week}
-      </p>
+    <>
+      <section className="card present" aria-labelledby="present-verb">
+        <span className="sticker">
+          <Icon name="sparkle" size={16} /> ¡Verbo nuevo!
+        </span>
 
-      <div className="present-forms">
-        <div className="form-row">
-          <span className="form-label">Infinitivo</span>
-          <h2 id="present-title" className="verb">
+        <span className="form-label">Infinitivo</span>
+        <div className="verb-row">
+          <h1 id="present-verb" className="verb" lang="en">
             to {verb.base}
-          </h2>
+          </h1>
           <SpeakButton text={`to ${verb.base}`} label={`to ${verb.base}`} />
         </div>
+
         <span className="form-arrow">
-          <Icon name="arrowDown" size={20} />
+          <Icon name="arrowDown" size={18} strokeWidth={3} />
         </span>
-        <div className="form-row">
-          <span className="form-label">Past simple</span>
-          <p className="verb verb-past">{pastLabel(verb)}</p>
+
+        <span className="form-label">Pasado</span>
+        <div className="verb-row">
+          <p className="verb verb-past" lang="en">
+            {pastLabel(verb)}
+          </p>
           <SpeakButton text={pastSpeech(verb)} label={pastLabel(verb)} />
         </div>
-        <p className="meaning">{verb.meaning}</p>
+
+        <span className="meaning-chip">{verb.meaning.replace(/\//g, ' / ')}</span>
+
         {verb.needsAll && <p className="note">Hay que saberse las dos: was (I, he, she, it) y were (you, we, they).</p>}
         {verb.past.length > 1 && !verb.needsAll && <p className="note">Las dos formas son correctas.</p>}
-        {verb.pastSpeech && (
-          <p className="note">
-            Se escribe igual, pero en pasado se pronuncia «{verb.pastSpeech}».
-          </p>
+        {verb.pastSpeech && <p className="note">Se escribe igual, pero en pasado se pronuncia «{verb.pastSpeech}».</p>}
+      </section>
+
+      <section className="family" aria-labelledby="family-name">
+        <h2 id="family-name" className="family-name">
+          {verb.family === 'unique' ? 'Verbo único' : `Familia: ${family.name}`}
+        </h2>
+        {verb.family !== 'unique' && (
+          <div className="family-chips" lang="en">
+            {relatives.map((other) => (
+              <span key={other.id} className="family-chip">
+                {other.base} → {other.past[0]}
+              </span>
+            ))}
+          </div>
         )}
-      </div>
-
-      <div className="family">
-        <p className="family-name">Familia: {family.name}</p>
         <p className="family-hint">
-          {family.hint}
-          {relatives.length > 0 && <> Como: {relatives.join(', ')}.</>}
+          {verb.family === 'unique' ? 'No sigue ningún patrón: este hay que memorizarlo.' : family.hint}
         </p>
-      </div>
+      </section>
 
-      <blockquote className="example">
-        <p lang="en">
-          {before}
-          <strong>{past}</strong>
-          {after}
-          <SpeakButton text={`${before}${verb.pastSpeech ?? past}${after}`} label="la frase" />
-        </p>
-        <p className="muted">{verb.exampleEs}</p>
-      </blockquote>
+      <section className="example" aria-label="Ejemplo">
+        <div className="example-text">
+          <p lang="en">
+            {before}
+            <strong>{past}</strong>
+            {after}
+          </p>
+          <p className="muted">{verb.exampleEs}</p>
+        </div>
+        <SpeakButton text={`${before}${verb.pastSpeech ?? past}${after}`} label="la frase" />
+      </section>
 
-      <button type="button" className="btn btn-primary btn-block" onClick={onDone} autoFocus>
-        Entendido
+      <button type="button" className="btn btn-primary btn-block btn-bottom" onClick={onDone} autoFocus>
+        ¡Entendido!
       </button>
-    </section>
+    </>
   );
 }

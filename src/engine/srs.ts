@@ -55,8 +55,3 @@ export function applyAnswer(card: CardState, correct: boolean, today: number): C
 export function isDue(card: CardState, today: number): boolean {
   return card.box >= 1 && card.due <= today;
 }
-
-/** Qué tipo de pregunta toca según la caja: primero reconocer, luego escribir. */
-export function kindForBox(box: number): QuestionKind {
-  return box <= 1 ? 'choice' : 'write';
-}

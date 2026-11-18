@@ -1,6 +1,7 @@
 import { VERBS } from '../data/verbs';
 import { shuffle, type Rng } from '../lib/random';
-import { isDue, kindForBox, newCard, type CardState, type QuestionKind } from './srs';
+import { kindFor, profileForAge, type LearnerProfile } from './profile';
+import { isDue, newCard, type CardState, type QuestionKind } from './srs';
 
 export type StepKind = 'present' | QuestionKind;
 
@@ -14,8 +15,6 @@ export interface Step {
 export const SESSION_LIMITS = {
   /** Repasos como máximo por sesión (los más urgentes primero). */
   maxReviews: 20,
-  /** Verbos nuevos por sesión. */
-  newPerSession: 4,
   /** Preguntas que pasan antes de repetir un verbo fallado. */
   retryGap: 3,
   /** Veces que se repite un verbo fallado dentro de la misma sesión. */
@@ -37,11 +36,17 @@ export function cardOf(cards: Cards, verbId: number): CardState {
 /**
  * Prepara la sesión del día:
  *  - primero los repasos pendientes (se eligen los más urgentes y se mezclan),
- *  - después los verbos nuevos: los de la semana actual primero y luego los de
- *    semanas anteriores que aún no se han visto. Se presentan de dos en dos y
- *    se preguntan justo después.
+ *  - después los verbos nuevos (cuántos depende de la edad): los de la semana
+ *    actual primero y luego los de semanas anteriores que aún no se han visto.
+ *    Se presentan de dos en dos y se preguntan justo después.
  */
-export function planSession(cards: Cards, currentWeek: number, today: number, rng: Rng = Math.random): SessionPlan {
+export function planSession(
+  cards: Cards,
+  currentWeek: number,
+  today: number,
+  profile: LearnerProfile = profileForAge(null),
+  rng: Rng = Math.random,
+): SessionPlan {
   const due = VERBS.filter((verb) => isDue(cardOf(cards, verb.id), today))
     .sort((a, b) => {
       const ca = cardOf(cards, a.id);
@@ -52,19 +57,19 @@ export function planSession(cards: Cards, currentWeek: number, today: number, rn
 
   const reviews: Step[] = shuffle(due, rng).map((verb) => ({
     verbId: verb.id,
-    kind: kindForBox(cardOf(cards, verb.id).box),
+    kind: kindFor(profile, cardOf(cards, verb.id).box),
   }));
 
   const unseen = VERBS.filter((verb) => verb.week <= currentWeek && cardOf(cards, verb.id).box === 0).sort(
     (a, b) => Number(b.week === currentWeek) - Number(a.week === currentWeek) || a.id - b.id,
   );
-  const newVerbs = due.length >= SESSION_LIMITS.maxReviews ? [] : unseen.slice(0, SESSION_LIMITS.newPerSession);
+  const newVerbs = due.length >= SESSION_LIMITS.maxReviews ? [] : unseen.slice(0, profile.newPerSession);
 
   const steps = [...reviews];
   for (let i = 0; i < newVerbs.length; i += 2) {
     const batch = newVerbs.slice(i, i + 2);
     for (const verb of batch) steps.push({ verbId: verb.id, kind: 'present' });
-    for (const verb of batch) steps.push({ verbId: verb.id, kind: 'choice' });
+    for (const verb of batch) steps.push({ verbId: verb.id, kind: kindFor(profile, 1) });
   }
 
   return { steps, reviewCount: reviews.length, newCount: newVerbs.length };

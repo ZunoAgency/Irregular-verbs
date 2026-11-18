@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#3b4cca"/>
+  <rect width="512" height="512" rx="112" fill="#6c4cf5"/>
   <text x="256" y="318" text-anchor="middle" font-family="ui-rounded, 'SF Pro Rounded', 'Arial Rounded MT Bold', 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="230" fill="#ffffff">-ed</text>
   <line x1="104" y1="372" x2="408" y2="150" stroke="#f0913a" stroke-width="44" stroke-linecap="round"/>
 </svg>

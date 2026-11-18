@@ -7,14 +7,19 @@ import { QuestionPrompt } from './QuestionPrompt';
 
 interface Props {
   verb: Verb;
+  name: string;
   autoSpeak: boolean;
-  onAnswer: (correct: boolean) => void;
+  retry: boolean;
+  /** Enseñar la primera letra como pista (los más pequeños). */
+  hint: boolean;
+  onAnswer: (correct: boolean) => boolean;
   onContinue: () => void;
 }
 
-export function WriteQuestion({ verb, autoSpeak, onAnswer, onContinue }: Props) {
+export function WriteQuestion({ verb, name, autoSpeak, retry, hint, onAnswer, onContinue }: Props) {
   const [value, setValue] = useState('');
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [willRetry, setWillRetry] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -28,17 +33,18 @@ export function WriteQuestion({ verb, autoSpeak, onAnswer, onContinue }: Props) 
     const result = checkPast(verb, value);
     setVerdict(result);
     if (autoSpeak) speak(pastSpeech(verb));
-    onAnswer(result.correct);
+    setWillRetry(onAnswer(result.correct));
   }
 
   const state = verdict ? (verdict.correct ? 'is-correct' : 'is-wrong') : '';
+  const firstLetter = verb.past[0]?.[0] ?? '';
 
   return (
-    <section className="card question">
-      <QuestionPrompt verb={verb} question="Escribe el past simple" />
+    <>
+      <QuestionPrompt verb={verb} question="Escribe el pasado de…" />
       <form className="write" onSubmit={submit}>
-        <label className="sr-only" htmlFor="answer">
-          Past simple de to {verb.base}
+        <label className="field-label" htmlFor="answer">
+          Tu respuesta
         </label>
         <input
           id="answer"
@@ -55,14 +61,29 @@ export function WriteQuestion({ verb, autoSpeak, onAnswer, onContinue }: Props) 
           lang="en"
           placeholder="Escribe aquí…"
         />
-        {verb.needsAll && !verdict && <p className="note">Escribe las dos formas, separadas por «/».</p>}
+        {!verdict && verb.needsAll && <p className="note">Escribe las dos formas, separadas por «/».</p>}
+        {!verdict && hint && !verb.needsAll && (
+          <p className="note">
+            Pista: empieza por «<strong lang="en">{firstLetter}</strong>».
+          </p>
+        )}
         {!verdict && (
           <button type="submit" className="btn btn-primary btn-block" disabled={value.trim() === ''}>
             Comprobar
           </button>
         )}
       </form>
-      {verdict && <Feedback verb={verb} verdict={verdict} onContinue={onContinue} showDiff />}
-    </section>
+      {verdict && (
+        <Feedback
+          verb={verb}
+          verdict={verdict}
+          name={name}
+          onContinue={onContinue}
+          showTiles
+          earnedStar={verdict.correct && !retry}
+          willRetry={willRetry}
+        />
+      )}
+    </>
   );
 }
