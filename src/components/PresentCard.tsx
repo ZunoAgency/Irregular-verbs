@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { FAMILIES, VERBS, pastLabel, pastSpeech, splitExample, type Verb } from '../data/verbs';
 import { speak } from '../lib/speech';
 import { Icon } from './Icon';
+import { MeaningChips } from './MeaningChips';
 import { SpeakButton } from './SpeakButton';
 
 interface Props {
@@ -46,7 +47,7 @@ export function PresentCard({ verb, autoSpeak, onDone }: Props) {
           <SpeakButton text={pastSpeech(verb)} label={pastLabel(verb)} />
         </div>
 
-        <span className="meaning-chip">{verb.meaning.replace(/\//g, ' / ')}</span>
+        <MeaningChips verb={verb} />
 
         {verb.needsAll && <p className="note">Hay que saberse las dos: was (I, he, she, it) y were (you, we, they).</p>}
         {verb.past.length > 1 && !verb.needsAll && <p className="note">Las dos formas son correctas.</p>}

@@ -16,6 +16,9 @@ El past participle no se estudia de momento.
 - **¡Quiero más!**: al terminar el reto, y en el resumen de cada sesión, se puede seguir aprendiendo sin límite. Siguen saliendo verbos nuevos en orden de semanas (primero lo que quede de la semana de clase y luego las siguientes), aunque se vaya por delante de clase. Cuando ya se conocen los 74, se hace un repaso extra de los que más cuestan; ahí acertar no adelanta el próximo repaso, pero fallar sí cuenta.
 - **Cajas de Leitner**: cada verbo está en una caja del 1 al 5. Si aciertas, sube una caja y tarda más en volver (1, 3, 7 y 21 días). Si fallas, vuelve a la caja 1 y se repite unas preguntas después, en la misma sesión.
 - **Estrellas y racha**: una estrella por cada acierto a la primera, de 1 a 3 estrellas al terminar cada sesión según los aciertos, y racha de días seguidos estudiando.
+- **Mis verbos**: los 74 verbos por semanas, con el color de cómo va cada uno (los que no ha visto, en gris) y un filtro "Me cuestan". Cada verbo tiene su ficha (audio, significados por separado, aciertos, fallos, próximo repaso, familia y frase) con un botón para practicarlo o aprenderlo ya.
+- **Repasar a su aire**: elige qué (los que más le cuestan, por semanas o por familias), cómo (tarjetas rápidas de "lo sabía / no lo sabía" o preguntas) y cuántos. Acertar no adelanta el próximo repaso; fallar, o marcar "No lo sabía", lo devuelve a la caja 1.
+- **Examen como en clase**: de una semana o de todo lo estudiado (20 verbos como mucho), en formato tabla como la hoja. Cada fila da una casilla y hay que escribir las otras dos; en el significado vale cualquiera de los de la hoja, sin fijarse en tildes ni mayúsculas. Sin corrección hasta el final: nota sobre 10 (Sobresaliente, Notable, Bien, Suficiente, Insuficiente), tabla corregida, "Practicar mis fallos", cronómetro opcional y última nota de cada examen. Los fallos devuelven el verbo a repaso.
 - **Tu camino**: las 11 semanas en un camino, que se va abriendo también por las semanas que se empiezan por adelantado. Una semana se completa cuando todos sus verbos se han acertado al menos una vez (★), y gana ★★ y ★★★ a medida que se afianzan.
 - **Opciones falsas creíbles**: la forma regular inventada (*bringed*), el pasado de un verbo parecido (*bought* para *bring*) y las faltas típicas (*tought*, *brougth*).
 - **Corrección útil**: dice qué tipo de error es y marca en fichas las letras que fallan.
@@ -43,10 +46,13 @@ src/
   engine/session.ts      planificador de la sesión del día
   engine/profile.ts      ajustes según la edad
   engine/stats.ts        racha, estrellas y progreso de cada semana
+  engine/review.ts       repaso a su aire: los que cuestan, por semanas o familias
+  engine/exam.ts         examen: filas, corrección y nota
+  engine/meanings.ts     significados de la hoja y su corrección
   engine/answers.ts      corrección de respuestas
   engine/distractors.ts  opciones falsas para la elección múltiple
   components/            Baco, tarjetas, preguntas y camino de semanas
-  screens/               bienvenida, inicio, sesión y ajustes
+  screens/               bienvenida, inicio, sesión, mis verbos, repasar, examen y ajustes
   storage/progress.ts    guardado del progreso
 ```
 
@@ -63,6 +69,7 @@ La app queda en `https://<usuario>.github.io/Irregular-verbs/`. Si el repositori
 1. ~~Base: datos, proyecto y publicación.~~
 2. ~~Primera versión: sesión diaria, cajas, presentación, elección múltiple y escribir.~~
 3. ~~Diseño para peques: Baco, nombre y edad, estrellas, racha y camino de semanas.~~
-4. Más modos: desde el español, frase con hueco, tabla tipo examen y familias.
-5. Progreso: verbos difíciles y copia de seguridad.
-6. Extras: juego de parejas, sincronizar dispositivos, past participle.
+4. ~~Mis verbos, repaso a su aire y examen como en clase.~~
+5. Más modos: desde el español y frase con hueco.
+6. Copia de seguridad del progreso.
+7. Extras: juego de parejas, sincronizar dispositivos, past participle.

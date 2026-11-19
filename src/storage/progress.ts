@@ -23,6 +23,26 @@ export interface Progress {
   studyDays: number[];
   /** Estrellas ganadas: una por cada acierto a la primera. */
   stars: number;
+  /** Notas de los exámenes, de la más antigua a la más reciente. */
+  exams: ExamRecord[];
+}
+
+export interface ExamRecord {
+  /** "w3" para la semana 3, "all" para todo lo estudiado. */
+  key: string;
+  grade: number;
+  day: number;
+}
+
+/** Exámenes que se guardan como mucho. */
+const MAX_EXAMS = 60;
+
+export function addExam(exams: ExamRecord[], record: ExamRecord): ExamRecord[] {
+  return [...exams, record].slice(-MAX_EXAMS);
+}
+
+export function lastExam(exams: ExamRecord[], key: string): ExamRecord | undefined {
+  return [...exams].reverse().find((exam) => exam.key === key);
 }
 
 const STORAGE_KEY = 'verbos-irregulares:v1';
@@ -34,6 +54,7 @@ export function emptyProgress(): Progress {
     settings: { name: '', age: null, currentWeek: 1, autoSpeak: true, onboarded: false },
     studyDays: [],
     stars: 0,
+    exams: [],
   };
 }
 
@@ -73,10 +94,16 @@ export function loadProgress(): Progress {
       },
       studyDays: Array.isArray(parsed.studyDays) ? parsed.studyDays : [],
       stars: typeof parsed.stars === 'number' && parsed.stars >= 0 ? parsed.stars : 0,
+      exams: Array.isArray(parsed.exams) ? parsed.exams.filter(isExamRecord) : [],
     };
   } catch {
     return fresh;
   }
+}
+
+function isExamRecord(value: unknown): value is ExamRecord {
+  const record = value as ExamRecord;
+  return typeof record?.key === 'string' && typeof record.grade === 'number' && typeof record.day === 'number';
 }
 
 /** Guarda el progreso; devuelve false si el navegador no deja (modo privado, sin espacio…). */

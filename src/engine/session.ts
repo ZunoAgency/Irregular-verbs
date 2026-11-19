@@ -3,7 +3,8 @@ import { shuffle, type Rng } from '../lib/random';
 import { kindFor, profileForAge, type LearnerProfile } from './profile';
 import { isDue, newCard, type CardState, type QuestionKind } from './srs';
 
-export type StepKind = 'present' | QuestionKind;
+/** `card`: tarjeta rápida en la que se marca si se sabía o no. */
+export type StepKind = 'present' | QuestionKind | 'card';
 
 export interface Step {
   verbId: number;
@@ -62,7 +63,7 @@ function dueReviews(cards: Cards, today: number, profile: LearnerProfile, rng: R
 }
 
 /** Los verbos nuevos se presentan de dos en dos y se preguntan justo después. */
-function introductionSteps(verbs: Verb[], profile: LearnerProfile): Step[] {
+export function introductionSteps(verbs: Verb[], profile: LearnerProfile): Step[] {
   const steps: Step[] = [];
   for (let i = 0; i < verbs.length; i += 2) {
     const batch = verbs.slice(i, i + 2);

@@ -1,23 +1,53 @@
 import { useState } from 'react';
 import { VERBS, getVerb, pastLabel } from '../data/verbs';
-import { profileForAge } from '../engine/profile';
-import { cardOf, planFor, scheduleRetry, SESSION_LIMITS, type SessionMode, type Step } from '../engine/session';
+import { profileForAge, type LearnerProfile } from '../engine/profile';
+import { practiceSteps, type ReviewStyle } from '../engine/review';
+import {
+  cardOf,
+  introductionSteps,
+  planFor,
+  scheduleRetry,
+  SESSION_LIMITS,
+  type Cards,
+  type Step,
+} from '../engine/session';
 import { applyAnswer, applyPracticeAnswer, dayNumber, introduce, MAX_BOX } from '../engine/srs';
 import { currentStreak, sessionStars } from '../engine/stats';
 import type { Progress } from '../storage/progress';
 import { Baco } from '../components/Baco';
 import { ChoiceQuestion } from '../components/ChoiceQuestion';
+import { FlashCard } from '../components/FlashCard';
 import { Icon } from '../components/Icon';
 import { PresentCard } from '../components/PresentCard';
 import { WriteQuestion } from '../components/WriteQuestion';
 
+/**
+ * Qué sesión se hace:
+ *  - `daily`: el reto de hoy; `more`: seguir aprendiendo después del reto;
+ *  - `practice`: repaso a su aire de unos verbos ya estudiados (tarjetas o preguntas);
+ *  - `learn`: aprender ya un verbo concreto que todavía no ha visto.
+ */
+export type SessionRequest =
+  | { kind: 'daily' }
+  | { kind: 'more' }
+  | { kind: 'practice'; verbIds: number[]; style: ReviewStyle }
+  | { kind: 'learn'; verbIds: number[] };
+
+function stepsFor(request: SessionRequest, cards: Cards, currentWeek: number, today: number, profile: LearnerProfile): Step[] {
+  if (request.kind === 'daily' || request.kind === 'more') {
+    return planFor(request.kind, cards, currentWeek, today, profile).steps;
+  }
+  if (request.kind === 'learn') return introductionSteps(request.verbIds.map(getVerb), profile);
+  return practiceSteps(request.verbIds, request.style, cards, profile);
+}
+
 interface Props {
-  mode: SessionMode;
+  request: SessionRequest;
   progress: Progress;
   update: (change: (progress: Progress) => Progress) => void;
   onExit: () => void;
-  /** Empezar otra sesión para seguir aprendiendo. */
-  onMore: () => void;
+  /** Empezar otra sesión justo después (seguir aprendiendo o practicar los fallos). */
+  onNext: (request: SessionRequest) => void;
 }
 
 interface Result {
@@ -26,11 +56,11 @@ interface Result {
   retry: boolean;
 }
 
-export function Session({ mode, progress, update, onExit, onMore }: Props) {
+export function Session({ request, progress, update, onExit, onNext }: Props) {
   const [today] = useState(dayNumber);
   const [profile] = useState(() => profileForAge(progress.settings.age));
-  const [steps, setSteps] = useState<Step[]>(
-    () => planFor(mode, progress.cards, progress.settings.currentWeek, today, profile).steps,
+  const [steps, setSteps] = useState<Step[]>(() =>
+    stepsFor(request, progress.cards, progress.settings.currentWeek, today, profile),
   );
   const [index, setIndex] = useState(0);
   const [retries, setRetries] = useState<Record<number, number>>({});
@@ -38,6 +68,7 @@ export function Session({ mode, progress, update, onExit, onMore }: Props) {
 
   const step = steps[index];
   const { autoSpeak, name } = progress.settings;
+  const isCards = request.kind === 'practice' && request.style === 'cards';
 
   function handlePresented(verbId: number) {
     update((p) => ({ ...p, cards: { ...p.cards, [verbId]: introduce(cardOf(p.cards, verbId), today) } }));
@@ -46,7 +77,8 @@ export function Session({ mode, progress, update, onExit, onMore }: Props) {
 
   /** Guarda la respuesta y devuelve si el verbo se repetirá en esta sesión. */
   function handleAnswer(current: Step, correct: boolean): boolean {
-    const earnsStar = correct && !current.retry;
+    // Las tarjetas son autoevaluación: no dan estrellas.
+    const earnsStar = correct && !current.retry && current.kind !== 'card';
     const answer = current.practice ? applyPracticeAnswer : applyAnswer;
     update((p) => ({
       ...p,
@@ -64,7 +96,19 @@ export function Session({ mode, progress, update, onExit, onMore }: Props) {
 
   const next = () => setIndex((i) => i + 1);
 
-  if (!step) return <Summary progress={progress} today={today} results={results} onExit={onExit} onMore={onMore} />;
+  if (!step) {
+    return (
+      <Summary
+        request={request}
+        cardsMode={isCards}
+        progress={progress}
+        today={today}
+        results={results}
+        onExit={onExit}
+        onNext={onNext}
+      />
+    );
+  }
 
   const verb = getVerb(step.verbId);
   const percent = Math.round((index / steps.length) * 100);
@@ -72,7 +116,7 @@ export function Session({ mode, progress, update, onExit, onMore }: Props) {
   return (
     <main className="screen session">
       <header className="session-bar">
-        <button type="button" className="icon-btn" onClick={onExit} aria-label="Salir de la sesión">
+        <button type="button" className="icon-btn" onClick={onExit} aria-label="Salir">
           <Icon name="close" size={20} strokeWidth={3} />
         </button>
         <div
@@ -81,7 +125,7 @@ export function Session({ mode, progress, update, onExit, onMore }: Props) {
           aria-valuemin={0}
           aria-valuemax={steps.length}
           aria-valuenow={index}
-          aria-label="Progreso de la sesión"
+          aria-label="Progreso"
         >
           <span style={{ width: `${Math.max(percent, 4)}%` }} />
         </div>
@@ -118,6 +162,15 @@ export function Session({ mode, progress, update, onExit, onMore }: Props) {
           onContinue={next}
         />
       )}
+      {step.kind === 'card' && (
+        <FlashCard
+          key={index}
+          verb={verb}
+          autoSpeak={autoSpeak}
+          onAnswer={(knew) => handleAnswer(step, knew)}
+          onContinue={next}
+        />
+      )}
     </main>
   );
 }
@@ -125,17 +178,21 @@ export function Session({ mode, progress, update, onExit, onMore }: Props) {
 const TITLES = ['', '¡Buen trabajo, {n}!', '¡Muy bien, {n}!', '¡Genial, {n}!'];
 
 function Summary({
+  request,
+  cardsMode,
   progress,
   today,
   results,
   onExit,
-  onMore,
+  onNext,
 }: {
+  request: SessionRequest;
+  cardsMode: boolean;
   progress: Progress;
   today: number;
   results: Result[];
   onExit: () => void;
-  onMore: () => void;
+  onNext: (request: SessionRequest) => void;
 }) {
   const { name } = progress.settings;
   const firstTries = results.filter((r) => !r.retry);
@@ -144,6 +201,7 @@ function Summary({
   const missed = [...new Set(results.filter((r) => !r.correct).map((r) => r.verbId))].map(getVerb);
   const streak = currentStreak(progress.studyDays, today);
   const mastered = VERBS.filter((verb) => (progress.cards[verb.id]?.box ?? 0) >= MAX_BOX).length;
+  const keepGoing = request.kind === 'daily' || request.kind === 'more';
 
   if (results.length === 0) {
     return (
@@ -152,11 +210,14 @@ function Summary({
         <h1 className="title">¡Todo al día, {name}!</h1>
         <p className="muted">Vuelve mañana para repasar.</p>
         <button type="button" className="btn btn-primary btn-block btn-big btn-bottom" onClick={onExit}>
-          Volver al inicio
+          Volver
         </button>
       </main>
     );
   }
+
+  const practiceMissed = () =>
+    onNext({ kind: 'practice', verbIds: missed.map((verb) => verb.id), style: cardsMode ? 'cards' : 'questions' });
 
   return (
     <main className="screen summary">
@@ -164,23 +225,31 @@ function Summary({
       <Baco mood="party" size={200} />
       <h1 className="title title-big">{TITLES[stars]?.replace('{n}', name)}</h1>
       <p className="summary-score">
-        {right} de {firstTries.length} a la primera
+        {cardsMode ? `Te sabías ${right} de ${firstTries.length}` : `${right} de ${firstTries.length} a la primera`}
       </p>
 
       <div className="summary-stars" role="img" aria-label={`${stars} de 3 estrellas`}>
         {[0, 1, 2].map((i) => (
-          <span key={i} className={`summary-star ${i === 1 ? 'is-middle' : ''} ${i < stars ? '' : 'is-empty'}`}>
+          <span key={i} className="summary-star">
             <Icon name="star" size={i === 1 ? 62 : 48} color={i < stars ? 'var(--star)' : 'var(--star-empty)'} />
           </span>
         ))}
       </div>
 
       <div className="summary-tiles">
-        <span className="summary-tile tint-4">
-          <Icon name="star" size={24} color="var(--star)" />
-          <strong>+{right}</strong>
-          {right === 1 ? 'estrella' : 'estrellas'}
-        </span>
+        {cardsMode ? (
+          <span className="summary-tile tint-5">
+            <Icon name="sparkle" size={24} color="var(--primary)" />
+            <strong>{right}</strong>
+            {right === 1 ? 'sabido' : 'sabidos'}
+          </span>
+        ) : (
+          <span className="summary-tile tint-4">
+            <Icon name="star" size={24} color="var(--star)" />
+            <strong>+{right}</strong>
+            {right === 1 ? 'estrella' : 'estrellas'}
+          </span>
+        )}
         <span className="summary-tile tint-flame">
           <Icon name="flame" size={24} color="var(--flame)" />
           <strong>{streak}</strong>
@@ -196,7 +265,7 @@ function Summary({
       {missed.length > 0 && (
         <section className="card missed" aria-labelledby="missed-title">
           <h2 id="missed-title" className="section-title">
-            Mañana repasamos
+            {keepGoing ? 'Mañana repasamos' : 'Para repasar'}
           </h2>
           <ul>
             {missed.map((verb) => (
@@ -204,7 +273,7 @@ function Summary({
                 <span lang="en">
                   to {verb.base} → <strong>{pastLabel(verb)}</strong>
                 </span>
-                <span className="muted small">{verb.meaning}</span>
+                <span className="muted small">{verb.meaning.replace(/\//g, ' / ')}</span>
               </li>
             ))}
           </ul>
@@ -212,11 +281,19 @@ function Summary({
       )}
 
       <div className="summary-actions">
-        <button type="button" className="btn btn-primary btn-block btn-big" onClick={onMore} autoFocus>
-          ¡Quiero más! <Icon name="arrowRight" size={22} strokeWidth={3} />
-        </button>
+        {keepGoing ? (
+          <button type="button" className="btn btn-primary btn-block btn-big" onClick={() => onNext({ kind: 'more' })} autoFocus>
+            ¡Quiero más! <Icon name="arrowRight" size={22} strokeWidth={3} />
+          </button>
+        ) : (
+          missed.length > 0 && (
+            <button type="button" className="btn btn-primary btn-block btn-big" onClick={practiceMissed} autoFocus>
+              Practicar mis fallos ({missed.length}) <Icon name="arrowRight" size={22} strokeWidth={3} />
+            </button>
+          )
+        )}
         <button type="button" className="btn btn-secondary btn-block" onClick={onExit}>
-          Volver al inicio
+          Volver
         </button>
       </div>
     </main>

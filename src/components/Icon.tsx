@@ -8,6 +8,10 @@ const STROKE = {
   arrowRight: 'M5 12h14M13 6l6 6-6 6',
   arrowDown: 'M12 5v14m-6-6 6 6 6-6',
   trophy: 'M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6',
+  chevron: 'M9 5l7 7-7 7',
+  book: 'M4 19.5V5a2 2 0 0 1 2-2h14v14H6a2 2 0 0 0-2 2.5ZM4 19.5A2 2 0 0 0 6 21h14M8 7h8M8 11h6',
+  cards: 'M7 4h11a2 2 0 0 1 2 2v11M4 8a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z',
+  exam: 'M9 4h6v3H9zM7 5.5H6a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5a2 2 0 0 0-2-2h-1M8.5 14l2.5 2.5 4.5-5',
 } as const;
 
 const FILLED = {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanName, emptyProgress, loadProgress, needsProfile } from './progress';
+import { addExam, cleanName, emptyProgress, lastExam, loadProgress, needsProfile } from './progress';
 
 const store = new Map<string, string>();
 (globalThis as { window?: unknown }).window = {
@@ -42,5 +42,20 @@ describe('progreso guardado', () => {
 
   it('cleanName recorta nombres muy largos', () => {
     expect(cleanName('x'.repeat(40))).toHaveLength(24);
+  });
+});
+
+describe('historial de exámenes', () => {
+  it('guarda las notas y recupera la última de cada examen', () => {
+    let exams = addExam([], { key: 'w1', grade: 7.1, day: 1 });
+    exams = addExam(exams, { key: 'all', grade: 6, day: 2 });
+    exams = addExam(exams, { key: 'w1', grade: 8.6, day: 3 });
+    expect(lastExam(exams, 'w1')?.grade).toBe(8.6);
+    expect(lastExam(exams, 'w2')).toBeUndefined();
+  });
+
+  it('el progreso guardado antes sin exámenes se carga con la lista vacía', () => {
+    store.set('verbos-irregulares:v1', JSON.stringify({ version: 1, cards: {}, settings: {}, studyDays: [] }));
+    expect(loadProgress().exams).toEqual([]);
   });
 });

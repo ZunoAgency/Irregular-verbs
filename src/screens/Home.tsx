@@ -9,10 +9,13 @@ import { BacoSays } from '../components/Baco';
 import { Icon } from '../components/Icon';
 import { WeekPath } from '../components/WeekPath';
 
+export type PracticeScreen = 'verbs' | 'review' | 'exam';
+
 interface Props {
   progress: Progress;
   onStart: (mode: SessionMode) => void;
   onSettings: () => void;
+  onPractice: (screen: PracticeScreen) => void;
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -27,7 +30,7 @@ function minutesFor(plan: SessionPlan): number {
   return Math.max(1, Math.round(((plan.reviewCount + plan.practiceCount + plan.newCount * 2) * 15) / 60));
 }
 
-export function Home({ progress, onStart, onSettings }: Props) {
+export function Home({ progress, onStart, onSettings, onPractice }: Props) {
   const { cards, settings } = progress;
   const today = dayNumber();
   const daily = useMemo(
@@ -43,7 +46,8 @@ export function Home({ progress, onStart, onSettings }: Props) {
 
   const { reviewCount: reviews, newCount: fresh } = daily;
   const dailyDone = reviews + fresh === 0;
-  const allSeen = VERBS.every((verb) => (cards[verb.id]?.box ?? 0) > 0);
+  const seenCount = VERBS.filter((verb) => (cards[verb.id]?.box ?? 0) > 0).length;
+  const allSeen = seenCount === VERBS.length;
 
   let message: string;
   if (reviews > 0 && fresh > 0) {
@@ -130,6 +134,35 @@ export function Home({ progress, onStart, onSettings }: Props) {
             <p className="muted small mission-foot">Cuando lo termines, podrás seguir aprendiendo todo lo que quieras.</p>
           </>
         )}
+      </section>
+
+      <section aria-labelledby="practice-title">
+        <h2 id="practice-title" className="section-title practice-title">
+          Practica a tu manera
+        </h2>
+        <nav className="practice-tiles" aria-labelledby="practice-title">
+          <button type="button" className="practice-tile tint-5" onClick={() => onPractice('verbs')}>
+            <span className="practice-icon practice-icon-verbs">
+              <Icon name="book" size={26} strokeWidth={2.4} />
+            </span>
+            <span className="practice-name">Mis verbos</span>
+            <span className="practice-note">{seenCount} vistos</span>
+          </button>
+          <button type="button" className="practice-tile tint-3" onClick={() => onPractice('review')}>
+            <span className="practice-icon practice-icon-review">
+              <Icon name="cards" size={26} strokeWidth={2.4} />
+            </span>
+            <span className="practice-name">Repasar</span>
+            <span className="practice-note">a tu aire</span>
+          </button>
+          <button type="button" className="practice-tile tint-4" onClick={() => onPractice('exam')}>
+            <span className="practice-icon practice-icon-exam">
+              <Icon name="exam" size={26} strokeWidth={2.4} />
+            </span>
+            <span className="practice-name">Examen</span>
+            <span className="practice-note">como en clase</span>
+          </button>
+        </nav>
       </section>
 
       <section aria-labelledby="path-title">
