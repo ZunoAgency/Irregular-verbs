@@ -22,6 +22,8 @@ export interface CardState {
   correct: number;
   wrong: number;
   lastSeen: number | null;
+  /** Día en que se presentó (no existe en el progreso guardado antes de añadirlo). */
+  introduced?: number;
 }
 
 export type QuestionKind = 'choice' | 'write';
@@ -38,7 +40,7 @@ export function dayNumber(date: Date = new Date()): number {
 /** El verbo se acaba de presentar: entra en la caja 1. */
 export function introduce(card: CardState, today: number): CardState {
   if (card.box > 0) return card;
-  return { ...card, box: 1, due: today, lastSeen: today };
+  return { ...card, box: 1, due: today, lastSeen: today, introduced: today };
 }
 
 export function applyAnswer(card: CardState, correct: boolean, today: number): CardState {
@@ -50,6 +52,16 @@ export function applyAnswer(card: CardState, correct: boolean, today: number): C
   const box = Math.min(Math.max(card.box, 1) + 1, MAX_BOX);
   const interval = wasMastered ? MASTERED_INTERVAL : (INTERVAL_DAYS[box] ?? 0);
   return { ...base, box, due: today + interval, correct: card.correct + 1 };
+}
+
+/**
+ * Respuesta en un repaso extra, a un verbo al que todavía no le tocaba: un
+ * acierto no adelanta su próximo repaso (repasar antes de tiempo afianza
+ * menos), pero un fallo sí cuenta y lo devuelve a la caja 1.
+ */
+export function applyPracticeAnswer(card: CardState, correct: boolean, today: number): CardState {
+  if (!correct) return applyAnswer(card, false, today);
+  return { ...card, seen: card.seen + 1, correct: card.correct + 1, lastSeen: today };
 }
 
 export function isDue(card: CardState, today: number): boolean {

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { VERBS, getVerb, pastLabel } from '../data/verbs';
 import { profileForAge } from '../engine/profile';
-import { cardOf, planSession, scheduleRetry, SESSION_LIMITS, type Step } from '../engine/session';
-import { applyAnswer, dayNumber, introduce, MAX_BOX } from '../engine/srs';
+import { cardOf, planFor, scheduleRetry, SESSION_LIMITS, type SessionMode, type Step } from '../engine/session';
+import { applyAnswer, applyPracticeAnswer, dayNumber, introduce, MAX_BOX } from '../engine/srs';
 import { currentStreak, sessionStars } from '../engine/stats';
 import type { Progress } from '../storage/progress';
 import { Baco } from '../components/Baco';
@@ -12,9 +12,12 @@ import { PresentCard } from '../components/PresentCard';
 import { WriteQuestion } from '../components/WriteQuestion';
 
 interface Props {
+  mode: SessionMode;
   progress: Progress;
   update: (change: (progress: Progress) => Progress) => void;
   onExit: () => void;
+  /** Empezar otra sesión para seguir aprendiendo. */
+  onMore: () => void;
 }
 
 interface Result {
@@ -23,11 +26,11 @@ interface Result {
   retry: boolean;
 }
 
-export function Session({ progress, update, onExit }: Props) {
+export function Session({ mode, progress, update, onExit, onMore }: Props) {
   const [today] = useState(dayNumber);
   const [profile] = useState(() => profileForAge(progress.settings.age));
   const [steps, setSteps] = useState<Step[]>(
-    () => planSession(progress.cards, progress.settings.currentWeek, today, profile).steps,
+    () => planFor(mode, progress.cards, progress.settings.currentWeek, today, profile).steps,
   );
   const [index, setIndex] = useState(0);
   const [retries, setRetries] = useState<Record<number, number>>({});
@@ -44,9 +47,10 @@ export function Session({ progress, update, onExit }: Props) {
   /** Guarda la respuesta y devuelve si el verbo se repetirá en esta sesión. */
   function handleAnswer(current: Step, correct: boolean): boolean {
     const earnsStar = correct && !current.retry;
+    const answer = current.practice ? applyPracticeAnswer : applyAnswer;
     update((p) => ({
       ...p,
-      cards: { ...p.cards, [current.verbId]: applyAnswer(cardOf(p.cards, current.verbId), correct, today) },
+      cards: { ...p.cards, [current.verbId]: answer(cardOf(p.cards, current.verbId), correct, today) },
       studyDays: p.studyDays.includes(today) ? p.studyDays : [...p.studyDays, today],
       stars: p.stars + (earnsStar ? 1 : 0),
     }));
@@ -60,7 +64,7 @@ export function Session({ progress, update, onExit }: Props) {
 
   const next = () => setIndex((i) => i + 1);
 
-  if (!step) return <Summary progress={progress} today={today} results={results} onExit={onExit} />;
+  if (!step) return <Summary progress={progress} today={today} results={results} onExit={onExit} onMore={onMore} />;
 
   const verb = getVerb(step.verbId);
   const percent = Math.round((index / steps.length) * 100);
@@ -125,11 +129,13 @@ function Summary({
   today,
   results,
   onExit,
+  onMore,
 }: {
   progress: Progress;
   today: number;
   results: Result[];
   onExit: () => void;
+  onMore: () => void;
 }) {
   const { name } = progress.settings;
   const firstTries = results.filter((r) => !r.retry);
@@ -205,9 +211,14 @@ function Summary({
         </section>
       )}
 
-      <button type="button" className="btn btn-primary btn-block btn-big btn-bottom" onClick={onExit} autoFocus>
-        Volver al inicio
-      </button>
+      <div className="summary-actions">
+        <button type="button" className="btn btn-primary btn-block btn-big" onClick={onMore} autoFocus>
+          ¡Quiero más! <Icon name="arrowRight" size={22} strokeWidth={3} />
+        </button>
+        <button type="button" className="btn btn-secondary btn-block" onClick={onExit}>
+          Volver al inicio
+        </button>
+      </div>
     </main>
   );
 }

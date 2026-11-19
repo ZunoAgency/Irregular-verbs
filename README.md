@@ -12,10 +12,11 @@ El past participle no se estudia de momento.
   - hasta 10 años: 3 verbos nuevos por sesión, más preguntas de elegir antes de escribir y pista con la primera letra;
   - de 11 a 13: 4 verbos nuevos y se pasa a escribir tras el primer acierto;
   - 14 o más: se escribe desde el principio.
-- **Sesión del día** (unos 10 minutos): primero los repasos pendientes y después los verbos nuevos, empezando por los de la semana en la que va la clase.
+- **Reto de hoy** (unos 10 minutos): los repasos pendientes y los verbos nuevos del día (3 o 4 según la edad), hasta la semana en la que va la clase.
+- **¡Quiero más!**: al terminar el reto, y en el resumen de cada sesión, se puede seguir aprendiendo sin límite. Siguen saliendo verbos nuevos en orden de semanas (primero lo que quede de la semana de clase y luego las siguientes), aunque se vaya por delante de clase. Cuando ya se conocen los 74, se hace un repaso extra de los que más cuestan; ahí acertar no adelanta el próximo repaso, pero fallar sí cuenta.
 - **Cajas de Leitner**: cada verbo está en una caja del 1 al 5. Si aciertas, sube una caja y tarda más en volver (1, 3, 7 y 21 días). Si fallas, vuelve a la caja 1 y se repite unas preguntas después, en la misma sesión.
 - **Estrellas y racha**: una estrella por cada acierto a la primera, de 1 a 3 estrellas al terminar cada sesión según los aciertos, y racha de días seguidos estudiando.
-- **Tu camino**: las 11 semanas en un camino. Una semana se completa cuando todos sus verbos se han acertado al menos una vez (★), y gana ★★ y ★★★ a medida que se afianzan.
+- **Tu camino**: las 11 semanas en un camino, que se va abriendo también por las semanas que se empiezan por adelantado. Una semana se completa cuando todos sus verbos se han acertado al menos una vez (★), y gana ★★ y ★★★ a medida que se afianzan.
 - **Opciones falsas creíbles**: la forma regular inventada (*bringed*), el pasado de un verbo parecido (*bought* para *bring*) y las faltas típicas (*tought*, *brougth*).
 - **Corrección útil**: dice qué tipo de error es y marca en fichas las letras que fallan.
 - Solo se aceptan las formas de la hoja. En *burn* y *learn* vale cualquiera de las dos; en *to be* hay que escribir *was/were*. Si se escribe *dreamed* o *spelled*, se avisa de que también existen, pero que la de la hoja es *dreamt* / *spelt*.

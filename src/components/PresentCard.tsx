@@ -23,7 +23,7 @@ export function PresentCard({ verb, autoSpeak, onDone }: Props) {
     <>
       <section className="card present" aria-labelledby="present-verb">
         <span className="sticker">
-          <Icon name="sparkle" size={16} /> ¡Verbo nuevo!
+          <Icon name="sparkle" size={16} /> ¡Verbo nuevo! · Semana {verb.week}
         </span>
 
         <span className="form-label">Infinitivo</span>

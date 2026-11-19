@@ -1,6 +1,6 @@
 import { WEEKS } from '../data/verbs';
 import type { Cards } from '../engine/session';
-import { weekProgress, type WeekProgress } from '../engine/stats';
+import { pathReach, weekNodeState, weekProgress, type WeekNodeState, type WeekProgress } from '../engine/stats';
 
 /** Centros de los 11 nodos: un camino en zigzag de 4 + 4 + 3. */
 const CENTERS: [number, number][] = [
@@ -28,16 +28,7 @@ function pathThrough(count: number): string {
   return d;
 }
 
-type NodeState = 'done' | 'current' | 'open' | 'locked' | 'goal';
-
-function stateOf(progress: WeekProgress, currentWeek: number): NodeState {
-  if (progress.stars > 0) return 'done';
-  if (progress.week === currentWeek) return 'current';
-  if (progress.week < currentWeek) return 'open';
-  return progress.week === WEEKS[WEEKS.length - 1] ? 'goal' : 'locked';
-}
-
-function describe(progress: WeekProgress, state: NodeState): string {
+function describe(progress: WeekProgress, state: WeekNodeState): string {
   if (state === 'done') return `Semana ${progress.week}: completa, ${progress.stars} de 3 estrellas`;
   if (state === 'locked' || state === 'goal') return `Semana ${progress.week}: todavía no`;
   return `Semana ${progress.week}: ${progress.learned} de ${progress.total} verbos`;
@@ -46,14 +37,14 @@ function describe(progress: WeekProgress, state: NodeState): string {
 export function WeekPath({ cards, currentWeek }: { cards: Cards; currentWeek: number }) {
   const weeks = WEEKS.map((week) => {
     const progress = weekProgress(cards, week);
-    return { progress, state: stateOf(progress, currentWeek) };
+    return { progress, state: weekNodeState(progress, currentWeek) };
   });
   const label = weeks.map(({ progress, state }) => describe(progress, state)).join('. ');
 
   return (
     <svg className="week-path" viewBox="0 0 342 246" role="img" aria-label={label}>
       <path className="week-path-trail" d={pathThrough(CENTERS.length)} />
-      <path className="week-path-done" d={pathThrough(Math.min(currentWeek, CENTERS.length))} />
+      <path className="week-path-done" d={pathThrough(Math.min(pathReach(cards, currentWeek), CENTERS.length))} />
       {weeks.map(({ progress, state }, i) => {
         const [cx, cy] = CENTERS[i]!;
         const big = state === 'current';

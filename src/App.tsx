@@ -3,6 +3,7 @@ import { Home } from './screens/Home';
 import { Session } from './screens/Session';
 import { Settings } from './screens/Settings';
 import { Welcome } from './screens/Welcome';
+import type { SessionMode } from './engine/session';
 import { emptyProgress, loadProgress, needsProfile, saveProgress, type Progress } from './storage/progress';
 
 type Screen = 'home' | 'session' | 'settings';
@@ -12,6 +13,7 @@ export default function App() {
   const [saveFailed, setSaveFailed] = useState(false);
   const [screen, setScreen] = useState<Screen>('home');
   const [sessionId, setSessionId] = useState(0);
+  const [sessionMode, setSessionMode] = useState<SessionMode>('daily');
 
   useEffect(() => {
     setSaveFailed(!saveProgress(progress));
@@ -52,7 +54,21 @@ export default function App() {
       />
     );
   } else if (screen === 'session') {
-    content = <Session key={sessionId} progress={progress} update={update} onExit={() => open('home')} />;
+    content = (
+      <Session
+        key={sessionId}
+        mode={sessionMode}
+        progress={progress}
+        update={update}
+        onExit={() => open('home')}
+        onMore={() => {
+          // Otra sesión seguida, sin pasar por el inicio.
+          setSessionMode('more');
+          setSessionId((id) => id + 1);
+          window.scrollTo(0, 0);
+        }}
+      />
+    );
   } else if (screen === 'settings') {
     content = (
       <Settings
@@ -66,7 +82,16 @@ export default function App() {
       />
     );
   } else {
-    content = <Home progress={progress} onStart={() => open('session')} onSettings={() => open('settings')} />;
+    content = (
+      <Home
+        progress={progress}
+        onStart={(mode) => {
+          setSessionMode(mode);
+          open('session');
+        }}
+        onSettings={() => open('settings')}
+      />
+    );
   }
 
   return (

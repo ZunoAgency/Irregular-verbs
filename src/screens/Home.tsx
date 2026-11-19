@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { VERBS, WEEKS } from '../data/verbs';
 import { profileForAge } from '../engine/profile';
-import { planSession } from '../engine/session';
+import { planDaily, planMore, type SessionMode, type SessionPlan } from '../engine/session';
 import { dayNumber } from '../engine/srs';
 import { currentStreak, weekProgress } from '../engine/stats';
 import type { Progress } from '../storage/progress';
@@ -11,26 +11,39 @@ import { WeekPath } from '../components/WeekPath';
 
 interface Props {
   progress: Progress;
-  onStart: () => void;
+  onStart: (mode: SessionMode) => void;
   onSettings: () => void;
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
+/** "la semana 2" o "las semanas 2 y 3". */
+function weeksLabel(weeks: number[]): string {
+  if (weeks.length === 1) return `la semana ${weeks[0]}`;
+  return `las semanas ${weeks.slice(0, -1).join(', ')} y ${weeks[weeks.length - 1]}`;
+}
+
+function minutesFor(plan: SessionPlan): number {
+  return Math.max(1, Math.round(((plan.reviewCount + plan.practiceCount + plan.newCount * 2) * 15) / 60));
+}
+
 export function Home({ progress, onStart, onSettings }: Props) {
   const { cards, settings } = progress;
   const today = dayNumber();
-  const plan = useMemo(
-    () => planSession(cards, settings.currentWeek, today, profileForAge(settings.age)),
+  const daily = useMemo(
+    () => planDaily(cards, settings.currentWeek, today, profileForAge(settings.age)),
+    [cards, settings.currentWeek, settings.age, today],
+  );
+  const more = useMemo(
+    () => planMore(cards, settings.currentWeek, today, profileForAge(settings.age)),
     [cards, settings.currentWeek, settings.age, today],
   );
   const streak = currentStreak(progress.studyDays, today);
   const weeksDone = WEEKS.filter((week) => weekProgress(cards, week).stars > 0).length;
 
-  const { reviewCount: reviews, newCount: fresh } = plan;
-  const hasWork = reviews + fresh > 0;
-  const minutes = Math.max(1, Math.round(((reviews + fresh * 2) * 15) / 60));
-  const allSeenUpToWeek = VERBS.every((verb) => verb.week > settings.currentWeek || (cards[verb.id]?.box ?? 0) > 0);
+  const { reviewCount: reviews, newCount: fresh } = daily;
+  const dailyDone = reviews + fresh === 0;
+  const allSeen = VERBS.every((verb) => (cards[verb.id]?.box ?? 0) > 0);
 
   let message: string;
   if (reviews > 0 && fresh > 0) {
@@ -39,10 +52,17 @@ export function Home({ progress, onStart, onSettings }: Props) {
     message = `Hoy toca repasar ${plural(reviews, 'verbo', 'verbos')}. ¿Empezamos?`;
   } else if (fresh > 0) {
     message = `Hoy vas a conocer ${plural(fresh, 'verbo nuevo', 'verbos nuevos')}. ¿Empezamos?`;
-  } else if (allSeenUpToWeek && settings.currentWeek < WEEKS.length) {
-    message = `Ya has visto todos los verbos hasta la semana ${settings.currentWeek}. Si en clase vais por la siguiente, cámbiala en ajustes.`;
   } else {
-    message = '¡Todo al día! Vuelve mañana y repasamos juntos.';
+    message = `¡Reto de hoy cumplido, ${settings.name}! Si te apetece, seguimos aprendiendo todo lo que quieras.`;
+  }
+
+  let moreText: string;
+  if (more.newCount > 0) {
+    moreText = `Te esperan ${plural(more.newCount, 'verbo nuevo', 'verbos nuevos')} de ${weeksLabel(more.newWeeks)}.`;
+  } else if (allSeen) {
+    moreText = `Ya conoces los ${VERBS.length} verbos. Repasa los que más te cuestan para que no se te olviden.`;
+  } else {
+    moreText = 'Repasa los que más te cuestan.';
   }
 
   return (
@@ -68,18 +88,30 @@ export function Home({ progress, onStart, onSettings }: Props) {
         </span>
       </div>
 
-      <BacoSays mood={hasWork ? 'normal' : 'happy'}>{message}</BacoSays>
+      <BacoSays mood={dailyDone ? 'happy' : 'normal'}>{message}</BacoSays>
 
       <section className="card mission" aria-labelledby="mission-title">
         <div className="mission-head">
           <h2 id="mission-title" className="section-title">
-            {hasWork ? 'Misión de hoy' : '¡Misión cumplida!'}
+            {dailyDone ? '¡Reto cumplido!' : 'Reto de hoy'}
           </h2>
           <button type="button" className="chip" onClick={onSettings}>
             Semana {settings.currentWeek}
           </button>
         </div>
-        {hasWork ? (
+        {dailyDone ? (
+          <>
+            <div className="more-callout">
+              <Icon name="sparkle" size={22} color="var(--star)" />
+              <p>
+                <strong>¿Quieres más?</strong> {moreText}
+              </p>
+            </div>
+            <button type="button" className="btn btn-primary btn-block btn-big" onClick={() => onStart('more')}>
+              ¡Quiero más! <Icon name="arrowRight" size={22} strokeWidth={3} />
+            </button>
+          </>
+        ) : (
           <>
             <div className="mission-tiles">
               <span className="mission-tile tint-5">
@@ -89,15 +121,14 @@ export function Home({ progress, onStart, onSettings }: Props) {
                 <strong>{fresh}</strong> {fresh === 1 ? 'nuevo' : 'nuevos'}
               </span>
               <span className="mission-tile tint-4">
-                <strong>{minutes}</strong> {minutes === 1 ? 'minuto' : 'minutos'}
+                <strong>{minutesFor(daily)}</strong> {minutesFor(daily) === 1 ? 'minuto' : 'minutos'}
               </span>
             </div>
-            <button type="button" className="btn btn-primary btn-block btn-big" onClick={onStart}>
+            <button type="button" className="btn btn-primary btn-block btn-big" onClick={() => onStart('daily')}>
               ¡Empezar! <Icon name="arrowRight" size={22} strokeWidth={3} />
             </button>
+            <p className="muted small mission-foot">Cuando lo termines, podrás seguir aprendiendo todo lo que quieras.</p>
           </>
-        ) : (
-          <p className="muted">Repasar justo cuando empiezas a olvidar es lo que hace que los verbos se queden.</p>
         )}
       </section>
 

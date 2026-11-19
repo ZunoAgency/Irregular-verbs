@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { profileForAge, kindFor } from './profile';
 import type { Cards } from './session';
 import type { CardState } from './srs';
-import { currentStreak, sessionStars, weekProgress } from './stats';
+import { currentStreak, pathReach, sessionStars, weekNodeState, weekProgress } from './stats';
 
 const card = (box: number): CardState => ({ box, due: 0, seen: 1, correct: 1, wrong: 0, lastSeen: 0 });
 
@@ -30,7 +30,7 @@ describe('estrellas de la sesión', () => {
 
 describe('progreso de una semana', () => {
   it('sin empezar no tiene estrellas', () => {
-    expect(weekProgress({}, 1)).toEqual({ week: 1, total: 7, learned: 0, stars: 0 });
+    expect(weekProgress({}, 1)).toEqual({ week: 1, total: 7, started: 0, learned: 0, stars: 0 });
   });
   it('gana estrellas según lo afianzados que estén sus verbos', () => {
     const cards: Cards = {};
@@ -62,5 +62,17 @@ describe('perfil por edad', () => {
   });
   it('sin edad usa el perfil de 12 años', () => {
     expect(profileForAge(null)).toEqual(profileForAge(12));
+  });
+});
+
+describe('estado de cada semana en el camino', () => {
+  it('una semana futura empezada por adelantado queda abierta y el camino llega hasta ella', () => {
+    const cards: Cards = { 15: card(2), 16: card(1) };
+    expect(weekNodeState(weekProgress(cards, 3), 1)).toBe('open');
+    expect(weekNodeState(weekProgress(cards, 4), 1)).toBe('locked');
+    expect(weekNodeState(weekProgress({}, 11), 1)).toBe('goal');
+    expect(weekNodeState(weekProgress({}, 1), 1)).toBe('current');
+    expect(pathReach(cards, 1)).toBe(3);
+    expect(pathReach({}, 2)).toBe(2);
   });
 });
